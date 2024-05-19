@@ -5,18 +5,31 @@
 #include <getopt.h>
 #include <fcntl.h>
 #include <string.h>
+#include <pthread.h>
+#include <semaphore.h>
+
+#include "defines.h"
+
+
+int tty_fd=-1;
+sem_t semaphore;
+struct pollfd pollfds;
+
+
 #include "setup_tty.c"
+#include "threads.c"
 
 int main(int argc, char* argv[]){
     int opt;
-    int tty_fd=-1;
     int speed=-1;
     while((opt=getopt(argc, argv, "d:"))!=-1){
         switch (opt){
         case 'd':
-            tty_fd=open(optarg, O_RDONLY);
+            //tty_fd=open(optarg, O_RDWR);
+            tty_fd=open("/dev/ttyACM0", O_RDWR);
+            
             if(tty_fd<0){
-                printf("Specify the correct device path with -d!");
+                write(STDERR_FILENO, "Device not found!",18);
                 return 0;
             }else{
                 printf("Connected to device %s.", optarg);
@@ -26,7 +39,25 @@ int main(int argc, char* argv[]){
             break;
         }
     }
-setup_tty(tty_fd);
+    if(tty_fd<0){
+        write(STDERR_FILENO, "Device not given by parameter -d!",34);
+        //return 0;
+    }
+    tty_fd=open("/dev/ttyACM0", O_RDWR);
+    setup_tty(tty_fd);
+    pollfds.fd=tty_fd;
+    pollfds.events=POLLIN;
+    sem_init(&semaphore,0,0);
+    //eloszor game start, az akadalyok koordinatai es a hajo koordinatai, utana csak a hajo koordinatai
+
+    pthread_t uart, drawP;
+
+    pthread_create(&uart, NULL, UART_RX, NULL);
+    printf("uart fut\n");
+    pthread_create(&uart, NULL, UART_RX, NULL);
+    printf("draw fut\n");
+    pthread_join(uart, NULL);
+    pthread_join(drawP, NULL);
 
 
 
