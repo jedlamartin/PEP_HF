@@ -86,8 +86,9 @@ void* UART_RX(void* arg){
 
         ship.x=HEIGHT/2+1;
         ship.y=0;
+        extern sem_t semaphore;
+
         while(1){
-            extern sem_t semaphore;
             sem_post(&semaphore);
             sem_wait(&semaphore);
 
@@ -130,34 +131,35 @@ void* UART_RX(void* arg){
 
 void* draw(void* arg){
     extern sem_t semaphore;
-    sem_wait(&semaphore);
-    
-    for(int i=0;i<WIDTH+2;i++){
-        write(STDOUT_FILENO,"#",1);
-    }
-    write(STDOUT_FILENO, "\n", 1);
-    
-    for(int x=0;x<HEIGHT;x++){
-        write(STDOUT_FILENO, "#", 1);
-        for(int y=0;y<WIDTH;y++){
-            if(ship.x==x && ship.y==y){
-                char c='>';
-                write(STDOUT_FILENO, &c, 1);
-            }else{
-                write(STDOUT_FILENO, &(table[x][y]), 1);
-            }
-        }
-        write(STDOUT_FILENO, "#\n", 2);
+    while(1){
+        sem_wait(&semaphore);
         
+        for(int i=0;i<WIDTH+2;i++){
+            write(STDOUT_FILENO,"#",1);
+        }
+        write(STDOUT_FILENO, "\n", 1);
+        
+        for(int x=0;x<HEIGHT;x++){
+            write(STDOUT_FILENO, "#", 1);
+            for(int y=0;y<WIDTH;y++){
+                if(ship.x==x && ship.y==y){
+                    char c='>';
+                    write(STDOUT_FILENO, &c, 1);
+                }else{
+                    write(STDOUT_FILENO, &(table[x][y]), 1);
+                }
+            }
+            write(STDOUT_FILENO, "#\n", 2);
+            
 
+        }
+        for(int i=0;i<WIDTH+2;i++){
+            write(STDOUT_FILENO,"#",1);
+        }
+        write(STDOUT_FILENO, "\n", 1);
+
+        sem_post(&semaphore);
     }
-    for(int i=0;i<WIDTH+2;i++){
-        write(STDOUT_FILENO,"#",1);
-    }
-    write(STDOUT_FILENO, "\n", 1);
-
-    sem_post(&semaphore);
-
     return NULL;
 }
 
