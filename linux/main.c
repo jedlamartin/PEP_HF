@@ -54,7 +54,7 @@ int main(int argc, char* argv[]){
 
     pthread_create(&uart, NULL, UART_RX, NULL);
     printf("uart fut\n");
-    pthread_create(&uart, NULL, UART_RX, NULL);
+    pthread_create(&drawP, NULL, draw, NULL);
     printf("draw fut\n");
     pthread_join(uart, NULL);
     pthread_join(drawP, NULL);
