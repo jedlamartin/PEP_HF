@@ -2,4 +2,5 @@
 #define WIDTH 11
 #define HEIGHT 11
 #define START 99
-#define END 98
+#define NEWMAP 98
+#define GAMEOVER 97

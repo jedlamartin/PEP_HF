@@ -12,7 +12,7 @@
 
 
 int tty_fd=-1;
-sem_t semaphore;
+sem_t semUART, semDraw;
 struct pollfd pollfds;
 
 
@@ -44,10 +44,15 @@ int main(int argc, char* argv[]){
         //return 0;
     }
     tty_fd=open("/dev/ttyACM0", O_RDWR);
+
     setup_tty(tty_fd);
     pollfds.fd=tty_fd;
+    //pollfds.fd=STDIN_FILENO;
+    
     pollfds.events=POLLIN;
-    sem_init(&semaphore,0,0);
+    sem_init(&semUART,0,1);
+    sem_init(&semDraw,0,0);
+
     //eloszor game start, az akadalyok koordinatai es a hajo koordinatai, utana csak a hajo koordinatai
 
     pthread_t uart, drawP;
