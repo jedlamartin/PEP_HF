@@ -85,7 +85,7 @@ void* UART_RX(void* arg){
                 obs[i].y=y;
             }
 
-            configureTable((char**)table, obs);
+            configureTable(table, obs);
 
             extern sem_t semUART;
             extern sem_t semDraw;
