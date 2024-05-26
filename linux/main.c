@@ -50,7 +50,7 @@ int main(int argc, char* argv[]){
     //pollfds.fd=STDIN_FILENO;
     
     pollfds.events=POLLIN;
-    sem_init(&semUART,0,1);
+    sem_init(&semUART,0,0);
     sem_init(&semDraw,0,0);
 
     //eloszor game start, az akadalyok koordinatai es a hajo koordinatai, utana csak a hajo koordinatai

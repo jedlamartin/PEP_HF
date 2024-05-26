@@ -26,6 +26,8 @@ Obstacle obs[OBS_COUNT];
 Ship ship;
 char table[HEIGHT][WIDTH];
 bool gameOver=false;
+extern sem_t semUART;
+extern sem_t semDraw;
 
 void configureTable(char table[HEIGHT][WIDTH], Obstacle* obs){
     for(int x=0;x<HEIGHT;x++){
@@ -87,8 +89,9 @@ void* UART_RX(void* arg){
 
             configureTable(table, obs);
 
-            extern sem_t semUART;
-            extern sem_t semDraw;
+
+
+            sem_post(&semUART);
 
             while(1){
                 sem_wait(&semUART);
@@ -132,7 +135,7 @@ void* UART_RX(void* arg){
                 write(STDERR_FILENO, "Cannot read from UART!\n", 23);
                 return NULL;
             }
-
+            gameOver=false;
         }
     }
     write(STDERR_FILENO, "No START recieved!\n",45);
@@ -140,9 +143,6 @@ void* UART_RX(void* arg){
 }
 
 void* draw(void* arg){
-    extern sem_t semUART;
-    extern sem_t semDraw;
-
     while(1){
         sem_wait(&semDraw);
         system("clear");
@@ -165,9 +165,9 @@ void* draw(void* arg){
             }
         }
         else{
-            for(int x=0;x<HEIGHT;x++){
+            for(size_t x=0;x<HEIGHT;x++){
                 write(STDOUT_FILENO, "#", 1);
-                for(int y=0;y<WIDTH;y++){
+                for(size_t y=0;y<WIDTH;y++){
                     if(ship.x==x && ship.y==y){
                         char c='>';
                         write(STDOUT_FILENO, &c, 1);
