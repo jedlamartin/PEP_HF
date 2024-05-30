@@ -83,8 +83,8 @@ void* UART_RX(void* arg){
                     write(STDERR_FILENO, "Cannot read from UART!\n", 23);
                     return NULL;
                 }
-                obs[i].x=x;
-                obs[i].y=y;
+                obs[i].x=x-48;
+                obs[i].y=y-48;
             }
 
             configureTable(table, obs);
@@ -121,8 +121,8 @@ void* UART_RX(void* arg){
                     write(STDERR_FILENO, "Cannot read from UART!\n", 23);
                     return NULL;
                 }
-                ship.x=x;
-                ship.y=y;
+                ship.x=x-48;
+                ship.y=y-48;
                 sem_post(&semDraw);
 
             }

@@ -15,4 +15,3 @@ int setup_tty(int tty_fd) {
     // beállítások alkalmazása
     tcsetattr(tty_fd, TCSANOW, &serial);
 }
-

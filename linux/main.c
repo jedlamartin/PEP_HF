@@ -25,8 +25,7 @@ int main(int argc, char* argv[]){
     while((opt=getopt(argc, argv, "d:"))!=-1){
         switch (opt){
         case 'd':
-            //tty_fd=open(optarg, O_RDWR);
-            tty_fd=open("/dev/ttyACM0", O_RDWR);
+            tty_fd=open(optarg, O_RDWR);
             
             if(tty_fd<0){
                 write(STDERR_FILENO, "Device not found!",18);
@@ -41,13 +40,10 @@ int main(int argc, char* argv[]){
     }
     if(tty_fd<0){
         write(STDERR_FILENO, "Device not given by parameter -d!",34);
-        //return 0;
+        return 0;
     }
-    tty_fd=open("/dev/ttyACM0", O_RDWR);
-
     setup_tty(tty_fd);
     pollfds.fd=tty_fd;
-    //pollfds.fd=STDIN_FILENO;
     
     pollfds.events=POLLIN;
     sem_init(&semUART,0,0);
@@ -63,9 +59,6 @@ int main(int argc, char* argv[]){
     printf("draw fut\n");
     pthread_join(uart, NULL);
     pthread_join(drawP, NULL);
-
-
-
 
     return 0;
 }
