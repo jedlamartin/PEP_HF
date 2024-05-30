@@ -7,8 +7,10 @@
 #include <string.h>
 #include <semaphore.h>
 #include <poll.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <fcntl.h>
 #include "defines.h"
 
 
@@ -28,6 +30,8 @@ char table[HEIGHT][WIDTH];
 bool gameOver=false;
 extern sem_t semUART;
 extern sem_t semDraw;
+size_t maxScore=0;
+size_t scoreV=0;
 
 void configureTable(char table[HEIGHT][WIDTH], Obstacle* obs){
     for(int x=0;x<HEIGHT;x++){
@@ -106,9 +110,14 @@ void* UART_RX(void* arg){
                 }
 
                 if(x==NEWMAP){
+                    scoreV++;
                     break;
                 }else if(x==GAMEOVER){
                     gameOver=true;
+                    if(scoreV>maxScore){
+                        maxScore=scoreV;
+                    }
+                    scoreV=0;
                     sem_post(&semDraw);
                     break;
                 }
@@ -187,5 +196,48 @@ void* draw(void* arg){
     }
     return NULL;
 }
+
+void* score(void* arg){
+    char x;
+    extern struct pollfd pollIn;
+
+    if(poll(&pollIn,1,-1)==-1){
+        write(STDERR_FILENO, "Poll error!\n", 13);
+        return NULL;
+    }
+    if(read(STDIN_FILENO,&x,1)==-1){
+        write(STDERR_FILENO, "Cannot read from STDIN!\n", 23);
+        return NULL;
+    }
+    if(x=='x'){
+        char name[20];
+        read(STDIN_FILENO,&x,1);
+        write(STDOUT_FILENO, "Name: ", 6);
+        if(read(STDIN_FILENO,&name,20)==-1){
+            write(STDERR_FILENO, "Cannot read from STDIN!\n", 23);
+            return NULL;
+        }
+        int fd = open("scores.txt", O_CREAT | O_WRONLY | O_APPEND);
+        if(fd<0){
+            write(STDERR_FILENO, "Cannot open file!",18);
+        }
+        write(fd, name, strlen(name)-1);
+        write(fd, " - ", 3);
+
+        char str[10];
+        sprintf(str, "%ld", maxScore);
+
+        write(fd, str, strlen(str));
+        write(fd, "\n", 1);
+        sem_destroy(&semUART);
+        sem_destroy(&semDraw);
+        //fclose(fp);
+        close(fd);
+        close(tty_fd);
+        return NULL;
+
+    }
+}
+
 
 #endif
