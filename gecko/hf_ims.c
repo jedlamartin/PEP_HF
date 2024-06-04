@@ -26,6 +26,7 @@
 #include <FreeRTOS.h>
 #include <task.h>
 #include <timers.h>
+#include <event_groups.h>
 
 #define max_x 10  //sor
 #define max_y 30  //oszlop
@@ -37,13 +38,17 @@
 #define NEWMAP 98
 #define GAMEOVER 97
 
+#define Left_Button_flag ( 1 << 0 )
+#define Right_Button_flag ( 1 << 1 )
+
 /***************************************************************************//**
  * Global variables
  ******************************************************************************/
-TaskHandle_t HandleButtonL;
-TaskHandle_t HandleButtonR;
+TaskHandle_t HandleButton;
 TaskHandle_t HandleShip;
 TimerHandle_t HandleTimer;
+EventGroupHandle_t xButtonEventGroup;
+EventBits_t uxBits;
 
 enum stat
 {
@@ -116,33 +121,24 @@ reset_game (void)
  * FreeRTOS tasks.
  ******************************************************************************/
 static void
-prvTaskButtonL (void *pvParam __attribute__((unused)))
+prvTaskButton (void *pvParam __attribute__((unused)))
 {
   while (1)
     {
-      vTaskSuspend (NULL);
-      if (state == initial || state == gameover)
-        {
-          reset_game ();
-        }
-      else if (state == running)
-        if (dir < up)
-          dir++;
-    }
-}
 
-static void
-prvTaskButtonR (void *pvParam __attribute__((unused)))
-{
-  while (1)
-    {
-      vTaskSuspend (NULL);
-      if (state == initial || state == gameover)
+      if (state == running)
         {
-          reset_game ();
+          EventBits_t bits = xEventGroupGetBits(xButtonEventGroup);
+          if (bits == Left_Button_flag && dir < up)
+            dir++;
+          else if (bits == Right_Button_flag && dir > down)
+            dir--;
         }
-      else if (dir > down)
-        dir--;
+      else
+        reset_game ();
+      xEventGroupClearBits (xButtonEventGroup, /* The event group being updated. */
+                            Left_Button_flag | Right_Button_flag);/* The bits being cleared. */
+      vTaskSuspend (NULL);
     }
 }
 
@@ -215,21 +211,49 @@ timerCallback (TimerHandle_t t __attribute__((unused)))
 void
 GPIO_ODD_IRQHandler (void)
 {
-  BaseType_t switchReq;
+  BaseType_t xHigherPriorityTaskWoken, xResult, switchReq;
 
-  switchReq = xTaskResumeFromISR (HandleButtonL);
+  /* xHigherPriorityTaskWoken must be initialised to pdFALSE. */
+  xHigherPriorityTaskWoken = pdFALSE;
+  switchReq = xTaskResumeFromISR (HandleButton);
+  xResult = xEventGroupSetBitsFromISR (xButtonEventGroup, /* The event group being updated. */
+                                       Left_Button_flag, /* The bits being set. */
+                                       &xHigherPriorityTaskWoken);
   GPIO_IntClear (1 << 9);
-  portYIELD_FROM_ISR(switchReq);
+
+  /* Was the message posted successfully? */
+  if (xResult != pdFAIL)
+    {
+      /* If xHigherPriorityTaskWoken is now set to pdTRUE then a context
+       switch should be requested.  The macro used is port specific and will
+       be either portYIELD_FROM_ISR() or portEND_SWITCHING_ISR() - refer to
+       the documentation page for the port being used. */
+      portYIELD_FROM_ISR(switchReq);
+    }
 }
 
 void
 GPIO_EVEN_IRQHandler (void)
 {
-  BaseType_t switchReq;
+  BaseType_t xHigherPriorityTaskWoken, xResult, switchReq;
 
-  switchReq = xTaskResumeFromISR (HandleButtonR);
+  /* xHigherPriorityTaskWoken must be initialised to pdFALSE. */
+  xHigherPriorityTaskWoken = pdFALSE;
+  switchReq = xTaskResumeFromISR (HandleButton);
+  xResult = xEventGroupSetBitsFromISR (xButtonEventGroup, /* The event group being updated. */
+                                       Right_Button_flag, /* The bits being set. */
+                                       &xHigherPriorityTaskWoken);
   GPIO_IntClear (1 << 10);
-  portYIELD_FROM_ISR(switchReq);
+
+  /* Was the message posted successfully? */
+  if (xResult != pdFAIL)
+    {
+      /* If xHigherPriorityTaskWoken is now set to pdTRUE then a context
+       switch should be requested.  The macro used is port specific and will
+       be either portYIELD_FROM_ISR() or portEND_SWITCHING_ISR() - refer to
+       the documentation page for the port being used. */
+      portYIELD_FROM_ISR(switchReq);
+    }
 }
 
 /***************************************************************************//**
@@ -245,22 +269,27 @@ app_init (void)
   NVIC_EnableIRQ (GPIO_ODD_IRQn);
   NVIC_EnableIRQ (GPIO_EVEN_IRQn);
 
+  xButtonEventGroup = xEventGroupCreate ();
+
+  /* Was the event group created successfully? */
+  if (xButtonEventGroup == NULL)
+    {
+      /* The event group was not created because there was insufficient
+       FreeRTOS heap available. */
+      while (1)
+        ;
+    }
+
   srand ((int) osKernelGetSysTimerCount);     //random generátor inicializálás
 
   HandleTimer = xTimerCreate ("Timer", step_time, pdTRUE, NULL, timerCallback);
   xTimerStart(HandleTimer, 0);
 
-  xTaskCreate (prvTaskButtonL, "ButtonL",
+  xTaskCreate (prvTaskButton, "Button",
   configMINIMAL_STACK_SIZE,
                NULL,
                tskIDLE_PRIORITY + 1,
-               &HandleButtonL);
-
-  xTaskCreate (prvTaskButtonR, "ButtonR",
-  configMINIMAL_STACK_SIZE,
-               NULL,
-               tskIDLE_PRIORITY + 1,
-               &HandleButtonR);
+               &HandleButton);
 
   xTaskCreate (prvTaskShip, "Ship",
   configMINIMAL_STACK_SIZE,
@@ -269,6 +298,10 @@ app_init (void)
                &HandleShip);
 
   vTaskSuspend (HandleShip);
+  vTaskSuspend (HandleButton);
+
+  xEventGroupClearBits (xButtonEventGroup, /* The event group being updated. */
+                        Left_Button_flag | Right_Button_flag);/* The bits being cleared. */
 }
 
 /***************************************************************************//**
