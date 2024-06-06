@@ -127,7 +127,7 @@ reset_game (void)
  ******************************************************************************/
 
 void vApplicationIdleHook (void) {
-  EMU_EnterEM1();
+  EMU_EnterEM2(true);
 }
 
 static void
