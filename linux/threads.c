@@ -108,13 +108,6 @@ void* UART_RX(void* arg){
                     return NULL;
                 }
 
-                while(x<48 || x>147){
-                    if(read(tty_fd, &x, 1)==-1){
-                        write(STDERR_FILENO, "Cannot read from UART!\n", 23);
-                        return NULL;
-                    }
-                }
-
                 if(x==NEWMAP){
                     scoreV++;
                     break;
