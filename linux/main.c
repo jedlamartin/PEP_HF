@@ -21,7 +21,6 @@ struct pollfd pollIn;
 
 int main(int argc, char* argv[]){
     int opt;
-    int speed=-1;
     while((opt=getopt(argc, argv, "d:"))!=-1){
         switch (opt){
         case 'd':

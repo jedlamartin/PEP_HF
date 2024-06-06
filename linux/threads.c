@@ -50,7 +50,6 @@ void configureTable(char table[HEIGHT][WIDTH], Obstacle* obs){
 void* UART_RX(void* arg){
     extern int tty_fd;
     char start;
-    int end;
     extern struct pollfd pollfds;
 
     while(1){
@@ -107,6 +106,13 @@ void* UART_RX(void* arg){
                 if(read(tty_fd, &x, 1)==-1){
                     write(STDERR_FILENO, "Cannot read from UART!\n", 23);
                     return NULL;
+                }
+
+                while(x<48 || x>147){
+                    if(read(tty_fd, &x, 1)==-1){
+                        write(STDERR_FILENO, "Cannot read from UART!\n", 23);
+                        return NULL;
+                    }
                 }
 
                 if(x==NEWMAP){
@@ -234,9 +240,9 @@ void* score(void* arg){
         //fclose(fp);
         close(fd);
         close(tty_fd);
-        return NULL;
-
     }
+    return NULL;
+
 }
 
 
